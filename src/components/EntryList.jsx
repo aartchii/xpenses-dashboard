@@ -5,18 +5,12 @@ import EntryItem from "./EntryItem.jsx";
 import Filters from "./Filters.jsx";
 
 const EntryList = () => {
-  const {
-    filteredEntries = [],
-    setEntries,
-  } = useContext(AppContext);
+  const { filteredEntries = [], setEntries } = useContext(AppContext);
 
   const [fileName, setFileName] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const entriesPerPage = 10;
 
-  // ======================
-  // MANUAL ENTRY STATE
-  // ======================
   const [newEntry, setNewEntry] = useState({
     name: "",
     price: "",
@@ -38,9 +32,6 @@ const EntryList = () => {
     }));
   };
 
-  // ======================
-  // ADD MANUAL ENTRY
-  // ======================
   const addManualEntry = () => {
     if (!newEntry.name || !newEntry.price || !newEntry.date) return;
 
@@ -65,7 +56,7 @@ const EntryList = () => {
   };
 
   // ======================
-  // EXCEL IMPORT (NO CONVERSION HERE!)
+  // FIXED EXCEL IMPORT
   // ======================
   const handleFile = (e) => {
     const file = e.target.files[0];
@@ -82,14 +73,23 @@ const EntryList = () => {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet, { raw: false });
 
+      // ✅ SAFE BOOLEAN PARSER
+      const parseCondition = (value) => {
+        if (value === true || value === "true" || value === "TRUE") return true;
+        if (value === false || value === "false" || value === "FALSE") return false;
+        if (value === 1 || value === "1") return true;
+        if (value === 0 || value === "0") return false;
+        return false;
+      };
+
       const entriesFromExcel = json.map((item, index) => ({
         code: item.code || `entry-${index + 1}`,
         name: item.name || "",
-        price: item.price, // 🔥 KEEP RAW (FIXED IN CONTEXT)
+        price: item.price,
         date: item.date || "",
         location: item.location || "",
         link: item.link || "",
-        condition: item.condition === "true" || item.condition === true,
+        condition: parseCondition(item.condition), // ✅ FIXED
         console: item.console || "",
         type: item.type || "",
         city: item.city || "",
@@ -102,9 +102,6 @@ const EntryList = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  // ======================
-  // PAGINATION
-  // ======================
   const indexOfLastEntry = currentPage * entriesPerPage;
   const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
 
@@ -115,22 +112,15 @@ const EntryList = () => {
 
   const totalPages = Math.ceil(filteredEntries.length / entriesPerPage);
 
-  const handlePrev = () =>
-    currentPage > 1 && setCurrentPage((p) => p - 1);
-
+  const handlePrev = () => currentPage > 1 && setCurrentPage((p) => p - 1);
   const handleNext = () =>
     currentPage < totalPages && setCurrentPage((p) => p + 1);
 
-  // ======================
-  // RENDER
-  // ======================
   return (
     <div className="entry-list">
       <h2>Entry List</h2>
 
-      {/* ======================
-          MANUAL ENTRY FORM
-      ====================== */}
+      {/* MANUAL ENTRY */}
       <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
         <input name="name" value={newEntry.name} onChange={handleNewEntryChange} placeholder="Name" />
         <input name="price" value={newEntry.price} onChange={handleNewEntryChange} placeholder="Price" />
@@ -154,20 +144,14 @@ const EntryList = () => {
         <button onClick={addManualEntry}>Add Entry</button>
       </div>
 
-      {/* ======================
-          FILE UPLOAD
-      ====================== */}
+      {/* FILE */}
       <input type="file" accept=".xlsx,.xls" onChange={handleFile} />
       {fileName && <p>Loaded file: {fileName}</p>}
 
-      {/* ======================
-          FILTERS
-      ====================== */}
+      {/* FILTERS */}
       {filteredEntries.length > 0 && <Filters />}
 
-      {/* ======================
-          LIST
-      ====================== */}
+      {/* LIST */}
       {filteredEntries.length === 0 ? (
         <p>No entries found.</p>
       ) : (
@@ -178,14 +162,7 @@ const EntryList = () => {
             ))}
           </ul>
 
-          {/* PAGINATION */}
-          <div
-            style={{
-              marginTop: "10px",
-              display: "flex",
-              justifyContent: "space-between",
-            }}
-          >
+          <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between" }}>
             <button onClick={handlePrev} disabled={currentPage === 1}>
               Previous
             </button>

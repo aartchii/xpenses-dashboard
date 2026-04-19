@@ -1,10 +1,20 @@
-import { createContext, useState, useMemo } from "react";
+import { createContext, useState, useMemo, useEffect } from "react";
 
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  const [entries, setEntries] = useState([]);
-  const [wallet, setWallet] = useState(0);
+  // ======================
+  // LOAD FROM LOCALSTORAGE (PERSISTENCE)
+  // ======================
+  const [entries, setEntries] = useState(() => {
+    const saved = localStorage.getItem("entries");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [wallet, setWallet] = useState(() => {
+    const saved = localStorage.getItem("wallet");
+    return saved ? Number(saved) : 0;
+  });
 
   const [filters, setFilters] = useState({
     date: "",
@@ -22,16 +32,27 @@ export const AppProvider = ({ children }) => {
   const [future, setFuture] = useState([]);
 
   // ======================
-  // NORMALIZERS (IMPORTANT FIX)
+  // AUTO SAVE (CRITICAL)
+  // ======================
+  useEffect(() => {
+    localStorage.setItem("entries", JSON.stringify(entries));
+  }, [entries]);
+
+  useEffect(() => {
+    localStorage.setItem("wallet", wallet);
+  }, [wallet]);
+
+  // ======================
+  // NORMALIZERS
   // ======================
   const normalizePrice = (price) => {
     if (price === null || price === undefined) return 0;
     if (typeof price === "number") return price;
 
     const cleaned = String(price)
-      .replace(/\./g, "")   // remove dots (1.500)
-      .replace(/,/g, "")    // remove commas (1,500)
-      .replace(/\s/g, "");  // remove spaces
+      .replace(/\./g, "")
+      .replace(/,/g, "")
+      .replace(/\s/g, "");
 
     const num = Number(cleaned);
     return isNaN(num) ? 0 : num;
@@ -87,32 +108,32 @@ export const AppProvider = ({ children }) => {
         type: normalizeType(entry.type),
         console: normalizeText(entry.console),
         city: normalizeText(entry.city),
+        condition: Boolean(entry.condition),
       },
     ];
 
-    setSnapshots((prev) => [...prev, { entries, wallet }].slice(-10));
     setEntries(newEntries);
-
     addHistory(`Added entry "${entry.name}" costing ¥${entry.price}`);
   };
 
   const toggleEntryCondition = (code) => {
-    const newEntries = entries.map((e) =>
-      e.code === code ? { ...e, condition: !e.condition } : e
-    );
-
-    setSnapshots((prev) => [...prev, { entries, wallet }].slice(-10));
-    setEntries(newEntries);
-
-    const changed = entries.find((e) => e.code === code);
-
-    if (changed) {
-      addHistory(
-        `You ${
-          !changed.condition ? "checked" : "unchecked"
-        } "${changed.name}" costing ¥${changed.price}`
+    setEntries((prev) => {
+      const updated = prev.map((e) =>
+        e.code === code ? { ...e, condition: !e.condition } : e
       );
-    }
+
+      const changed = prev.find((e) => e.code === code);
+
+      if (changed) {
+        addHistory(
+          `You ${
+            !changed.condition ? "checked" : "unchecked"
+          } "${changed.name}" costing ¥${changed.price}`
+        );
+      }
+
+      return updated;
+    });
   };
 
   const updateEntries = (newEntries) => {
@@ -122,14 +143,14 @@ export const AppProvider = ({ children }) => {
       type: normalizeType(e.type),
       console: normalizeText(e.console),
       city: normalizeText(e.city),
+      condition: Boolean(e.condition),
     }));
 
-    setSnapshots((prev) => [...prev, { entries, wallet }].slice(-10));
     setEntries(normalized);
   };
 
   // ======================
-  // EXPENSES (100% SAFE)
+  // EXPENSES
   // ======================
   const expenses = useMemo(() => {
     return entries
@@ -138,12 +159,11 @@ export const AppProvider = ({ children }) => {
   }, [entries]);
 
   // ======================
-  // FILTERING (FIXED + CONSISTENT)
+  // FILTERS
   // ======================
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
       const matchDate = filters.date ? entry.date === filters.date : true;
-
       const price = normalizePrice(entry.price);
 
       const matchPrice = (() => {
@@ -207,7 +227,7 @@ export const AppProvider = ({ children }) => {
   }, [entries, filters]);
 
   // ======================
-  // CONTEXT VALUE
+  // CONTEXT
   // ======================
   return (
     <AppContext.Provider
@@ -232,9 +252,6 @@ export const AppProvider = ({ children }) => {
         addHistory,
 
         filteredEntries,
-
-        snapshots,
-        future,
       }}
     >
       {children}

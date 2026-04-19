@@ -22,9 +22,10 @@ const EntryItem = ({ entry }) => {
         padding: "6px 0",
       }}
     >
+      {/* ✅ FIX: always reliable boolean */}
       <input
         type="checkbox"
-        checked={entry.condition}
+        checked={!!entry.condition}
         onChange={handleToggle}
       />
 
