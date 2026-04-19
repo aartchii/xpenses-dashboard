@@ -10,7 +10,7 @@ const WalletInput = () => {
     const value = Number(inputValue);
     if (!isNaN(value)) {
       setWallet(value);
-      addHistory && addHistory(`Wallet set to €${value}`);
+      addHistory && addHistory(`Wallet set to ¥${value}`);
       setInputValue("");
     }
   };

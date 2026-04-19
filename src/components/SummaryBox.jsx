@@ -19,7 +19,7 @@ const SummaryBox = () => {
     if (!isNaN(value)) {
       const newWallet = type === "increase" ? wallet + value : wallet - value;
       setWallet(newWallet);
-      addHistory(`${type === "increase" ? "Added" : "Removed"} €${value} ${type === "increase" ? "to" : "from"} wallet`, new Date().toISOString().split("T")[0]);
+      addHistory(`${type === "increase" ? "Added" : "Removed"} ¥${value} ${type === "increase" ? "to" : "from"} wallet`, new Date().toISOString().split("T")[0]);
       setInputValue("");
     }
   };
@@ -62,9 +62,9 @@ const SummaryBox = () => {
   return (
     <div style={{ border: "1px solid #555", padding: "10px", width: "240px", borderRadius: "8px", backgroundColor: "#333", color: "#fff", fontFamily: "sans-serif" }}>
       <h3 style={{ marginBottom: "10px" }}>Summary</h3>
-      <div style={{ color: "#4caf50", marginBottom: "5px" }}>Available: €{displayWallet.toFixed(2)}</div>
-      <div style={{ color: "#f44336", marginBottom: "5px" }}>Expenses: €{displayExpenses.toFixed(2)}</div>
-      <div style={{ color: "#2196F3", marginBottom: "10px" }}>Remaining: €{remainingAmount.toFixed(2)}</div>
+      <div style={{ color: "#4caf50", marginBottom: "5px" }}>Available: ¥{displayWallet.toFixed(2)}</div>
+      <div style={{ color: "#f44336", marginBottom: "5px" }}>Expenses: ¥{displayExpenses.toFixed(2)}</div>
+      <div style={{ color: "#2196F3", marginBottom: "10px" }}>Remaining: ¥{remainingAmount.toFixed(2)}</div>
 
       <input
         type="number"
