@@ -2,17 +2,59 @@ import { createContext, useState, useMemo, useEffect } from "react";
 
 export const AppContext = createContext();
 
+const SESSION_KEYS = {
+  entries: "session_entries",
+  wallet: "session_wallet",
+};
+
+// ======================
+// NORMALIZERS
+// ======================
+const normalizePrice = (price) => {
+  if (price === null || price === undefined) return 0;
+  if (typeof price === "number") return price;
+
+  const cleaned = String(price)
+    .replace(/\./g, "")
+    .replace(/,/g, "")
+    .replace(/\s/g, "");
+
+  const num = Number(cleaned);
+  return isNaN(num) ? 0 : num;
+};
+
+const normalizeText = (text) =>
+  text ? String(text).trim().toLowerCase() : "";
+
+const normalizeType = (type) =>
+  type ? String(type).trim().toLowerCase() : "";
+
+// ======================
+// SINGLE SOURCE OF TRUTH NORMALIZER
+// ======================
+const normalizeEntry = (e) => ({
+  ...e,
+  code: e.code || `entry-${Date.now()}-${Math.random()}`,
+  price: normalizePrice(e.price),
+  type: normalizeType(e.type),
+  console: normalizeText(e.console),
+  city: normalizeText(e.city),
+  location: normalizeText(e.location),
+  date: e.date || "",
+  condition: Boolean(e.condition),
+});
+
 export const AppProvider = ({ children }) => {
   // ======================
-  // LOAD FROM LOCALSTORAGE (PERSISTENCE)
+  // LOAD SESSION (CLEAN RESTORE)
   // ======================
   const [entries, setEntries] = useState(() => {
-    const saved = localStorage.getItem("entries");
-    return saved ? JSON.parse(saved) : [];
+    const saved = sessionStorage.getItem(SESSION_KEYS.entries);
+    return saved ? JSON.parse(saved).map(normalizeEntry) : [];
   });
 
   const [wallet, setWallet] = useState(() => {
-    const saved = localStorage.getItem("wallet");
+    const saved = sessionStorage.getItem(SESSION_KEYS.wallet);
     return saved ? Number(saved) : 0;
   });
 
@@ -28,50 +70,24 @@ export const AppProvider = ({ children }) => {
   });
 
   const [history, setHistory] = useState([]);
-  const [snapshots, setSnapshots] = useState([]);
-  const [future, setFuture] = useState([]);
 
   // ======================
-  // AUTO SAVE (CRITICAL)
+  // SAVE SESSION
   // ======================
   useEffect(() => {
-    localStorage.setItem("entries", JSON.stringify(entries));
+    sessionStorage.setItem(SESSION_KEYS.entries, JSON.stringify(entries));
   }, [entries]);
 
   useEffect(() => {
-    localStorage.setItem("wallet", wallet);
+    sessionStorage.setItem(SESSION_KEYS.wallet, String(wallet));
   }, [wallet]);
-
-  // ======================
-  // NORMALIZERS
-  // ======================
-  const normalizePrice = (price) => {
-    if (price === null || price === undefined) return 0;
-    if (typeof price === "number") return price;
-
-    const cleaned = String(price)
-      .replace(/\./g, "")
-      .replace(/,/g, "")
-      .replace(/\s/g, "");
-
-    const num = Number(cleaned);
-    return isNaN(num) ? 0 : num;
-  };
-
-  const normalizeType = (type) =>
-    type ? String(type).trim().toLowerCase() : "";
-
-  const normalizeText = (text) =>
-    text ? String(text).trim().toLowerCase() : "";
 
   // ======================
   // HISTORY
   // ======================
-  const addHistory = (action, date = null) => {
-    const timestamp = date || new Date().toISOString().split("T")[0];
-
+  const addHistory = (action) => {
     setHistory((prev) => {
-      const updated = [...prev, { id: Date.now(), action, date: timestamp }];
+      const updated = [...prev, { id: Date.now(), action }];
       if (updated.length > 200) updated.shift();
       return updated;
     });
@@ -81,76 +97,43 @@ export const AppProvider = ({ children }) => {
   // WALLET
   // ======================
   const updateWallet = (value, message = null) => {
-    setSnapshots((prev) => [...prev, { entries, wallet }].slice(-10));
-    setWallet(value);
-
+    setWallet(Number(value) || 0);
     if (message) addHistory(message);
   };
 
-  const increaseWallet = (amount) => {
-    updateWallet(wallet + amount, `Added ¥${amount} to wallet`);
-  };
+  const increaseWallet = (amount) =>
+    updateWallet(wallet + amount, `Added ¥${amount}`);
 
-  const decreaseWallet = (amount) => {
-    updateWallet(wallet - amount, `Removed ¥${amount} from wallet`);
-  };
+  const decreaseWallet = (amount) =>
+    updateWallet(wallet - amount, `Removed ¥${amount}`);
 
   // ======================
   // ENTRY ACTIONS
   // ======================
   const addEntry = (entry) => {
-    const newEntries = [
-      ...entries,
-      {
-        ...entry,
-        code: `entry-${Date.now()}`,
-        price: normalizePrice(entry.price),
-        type: normalizeType(entry.type),
-        console: normalizeText(entry.console),
-        city: normalizeText(entry.city),
-        condition: Boolean(entry.condition),
-      },
-    ];
+    const newEntry = normalizeEntry({
+      ...entry,
+      code: `entry-${Date.now()}`,
+    });
 
-    setEntries(newEntries);
-    addHistory(`Added entry "${entry.name}" costing ¥${entry.price}`);
+    setEntries((prev) => [...prev, newEntry]);
+    addHistory(`Added "${entry.name}"`);
   };
 
   const toggleEntryCondition = (code) => {
-    setEntries((prev) => {
-      const updated = prev.map((e) =>
+    setEntries((prev) =>
+      prev.map((e) =>
         e.code === code ? { ...e, condition: !e.condition } : e
-      );
-
-      const changed = prev.find((e) => e.code === code);
-
-      if (changed) {
-        addHistory(
-          `You ${
-            !changed.condition ? "checked" : "unchecked"
-          } "${changed.name}" costing ¥${changed.price}`
-        );
-      }
-
-      return updated;
-    });
+      )
+    );
   };
 
   const updateEntries = (newEntries) => {
-    const normalized = newEntries.map((e) => ({
-      ...e,
-      price: normalizePrice(e.price),
-      type: normalizeType(e.type),
-      console: normalizeText(e.console),
-      city: normalizeText(e.city),
-      condition: Boolean(e.condition),
-    }));
-
-    setEntries(normalized);
+    setEntries(newEntries.map(normalizeEntry));
   };
 
   // ======================
-  // EXPENSES
+  // EXPENSES (REBUILD ALWAYS CORRECT)
   // ======================
   const expenses = useMemo(() => {
     return entries
@@ -159,7 +142,12 @@ export const AppProvider = ({ children }) => {
   }, [entries]);
 
   // ======================
-  // FILTERS
+  // REMAINING (ALWAYS SYNCS AFTER RELOAD)
+  // ======================
+  const remaining = useMemo(() => wallet - expenses, [wallet, expenses]);
+
+  // ======================
+  // FILTERED ENTRIES
   // ======================
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -227,7 +215,7 @@ export const AppProvider = ({ children }) => {
   }, [entries, filters]);
 
   // ======================
-  // CONTEXT
+  // CONTEXT VALUE
   // ======================
   return (
     <AppContext.Provider
@@ -244,6 +232,7 @@ export const AppProvider = ({ children }) => {
         decreaseWallet,
 
         expenses,
+        remaining,
 
         filters,
         setFilters,
