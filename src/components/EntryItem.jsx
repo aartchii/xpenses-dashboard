@@ -1,21 +1,16 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { AppContext } from "../context/AppContext.jsx";
 
-const EntryItem = ({ entry, index }) => {
-  const { entries, setEntries, addHistory } = useContext(AppContext);
+const formatPrice = (price) => {
+  if (price === null || price === undefined) return "-";
+  return new Intl.NumberFormat("en-US").format(price);
+};
 
-  const toggleCondition = () => {
-    const newEntries = [...entries];
-    newEntries[index].condition = !newEntries[index].condition;
+const EntryItem = ({ entry }) => {
+  const { toggleEntryCondition } = useContext(AppContext);
 
-    setEntries(newEntries);
-
-    addHistory &&
-      addHistory(
-        `You ${newEntries[index].condition ? "checked" : "unchecked"} "${
-          newEntries[index].name
-        }" costing €${newEntries[index].price}`
-      );
+  const handleToggle = () => {
+    toggleEntryCondition(entry.code);
   };
 
   return (
@@ -23,25 +18,26 @@ const EntryItem = ({ entry, index }) => {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "10px",
+        gap: "12px",
         padding: "6px 0",
       }}
     >
       <input
         type="checkbox"
         checked={entry.condition}
-        onChange={toggleCondition}
+        onChange={handleToggle}
       />
 
-      {/* Name */}
-      <span style={{ flex: 1 }}>{entry.name}</span>
+      <span style={{ flex: 1 }}>{entry.name || "-"}</span>
 
-      {/* Location */}
-      <span style={{ flex: 1, opacity: 0.8 }}>
-        {entry.location || "-"}
-      </span>
+      <span style={{ flex: 1, opacity: 0.85 }}>{entry.type || "-"}</span>
 
-      {/* Link */}
+      <span style={{ flex: 1, opacity: 0.85 }}>{entry.console || "-"}</span>
+
+      <span style={{ flex: 1, opacity: 0.85 }}>{entry.city || "-"}</span>
+
+      <span style={{ flex: 1, opacity: 0.7 }}>{entry.location || "-"}</span>
+
       <span style={{ flex: 1 }}>
         {entry.link ? (
           <a
@@ -57,11 +53,11 @@ const EntryItem = ({ entry, index }) => {
         )}
       </span>
 
-      {/* Price */}
-      <span>¥{entry.price}</span>
+      <span style={{ minWidth: "90px" }}>
+        ¥{formatPrice(entry.price)}
+      </span>
 
-      {/* Date */}
-      <span>{entry.date}</span>
+      <span>{entry.date || "-"}</span>
     </li>
   );
 };

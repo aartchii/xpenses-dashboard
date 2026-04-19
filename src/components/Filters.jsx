@@ -4,17 +4,18 @@ import { AppContext } from "../context/AppContext.jsx";
 const Filters = () => {
   const { entries = [], filters, setFilters } = useContext(AppContext);
 
-  // Compute unique filter options
-  const uniqueDates = [...new Set(entries.map((e) => e.date))];
-  const uniquePrices = [...new Set(entries.map((e) => e.price))];
-  const uniqueDescriptions = [...new Set(entries.map((e) => e.name))];
-  const uniqueLocations = [...new Set(entries.map((e) => e.location))];
-  const uniqueConditions = ["true", "false"];
-
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
+
+  const uniqueDates = [...new Set(entries.map((e) => e.date))].filter(Boolean);
+  const uniqueDescriptions = [...new Set(entries.map((e) => e.name))].filter(Boolean);
+  const uniqueLocations = [...new Set(entries.map((e) => e.location))].filter(Boolean);
+  const uniqueConsoles = [...new Set(entries.map((e) => e.console))].filter(Boolean);
+  const uniqueCities = [...new Set(entries.map((e) => e.city))].filter(Boolean);
+
+  const uniqueConditions = ["true", "false"];
 
   return (
     <div
@@ -25,6 +26,7 @@ const Filters = () => {
         flexWrap: "wrap",
       }}
     >
+      {/* Date */}
       <select name="date" value={filters.date} onChange={handleFilterChange}>
         <option value="">All Dates</option>
         {uniqueDates.map((d) => (
@@ -34,15 +36,18 @@ const Filters = () => {
         ))}
       </select>
 
+      {/* Price Range */}
       <select name="price" value={filters.price} onChange={handleFilterChange}>
         <option value="">All Prices</option>
-        {uniquePrices.map((p) => (
-          <option key={p} value={p}>
-            {p}
-          </option>
-        ))}
+        <option value="50-1000">50 - 1,000</option>
+        <option value="1000-3000">1,000 - 3,000</option>
+        <option value="3500-5000">3,500 - 5,000</option>
+        <option value="5000-10000">5,000 - 10,000</option>
+        <option value="10000-20000">10,000 - 20,000</option>
+        <option value="20000+">20,000+</option>
       </select>
 
+      {/* Name */}
       <select
         name="description"
         value={filters.description}
@@ -56,7 +61,7 @@ const Filters = () => {
         ))}
       </select>
 
-      {/* ✅ NEW: Location filter */}
+      {/* Location */}
       <select
         name="location"
         value={filters.location}
@@ -70,6 +75,39 @@ const Filters = () => {
         ))}
       </select>
 
+      {/* Console */}
+      <select
+        name="console"
+        value={filters.console}
+        onChange={handleFilterChange}
+      >
+        <option value="">All Consoles</option>
+        {uniqueConsoles.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+
+      {/* CITY */}
+      <select name="city" value={filters.city} onChange={handleFilterChange}>
+        <option value="">All Cities</option>
+        {uniqueCities.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+
+      {/* ✅ TYPE FILTER (FIXED: software / hardware / figure) */}
+      <select name="type" value={filters.type} onChange={handleFilterChange}>
+        <option value="">All Types</option>
+        <option value="software">Software</option>
+        <option value="hardware">Hardware</option>
+        <option value="figure">Figure</option>
+      </select>
+
+      {/* Condition */}
       <select
         name="condition"
         value={filters.condition}

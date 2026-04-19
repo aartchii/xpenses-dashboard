@@ -22,20 +22,31 @@ function App() {
       >
         <h1>Expense Tracker</h1>
 
-        {/* Header: Theme toggle + Image upload */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "10px",
+          }}
+        >
           <ThemeToggle />
           <ImageUpload setBackgroundImage={setBackgroundImage} />
         </div>
 
+        {/* Main layout */}
         <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
           <SummaryBox />
+
           <div
             style={{
               flex: 1,
               padding: "10px",
               borderRadius: "8px",
-              background: backgroundImage ? `${backgroundImage} no-repeat center/cover` : "#333",
+              background: backgroundImage
+                ? `${backgroundImage} no-repeat center/cover`
+                : "#333",
             }}
           >
             <EntryList />
